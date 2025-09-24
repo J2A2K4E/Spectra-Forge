@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spectral Forge: The Alchemist's Crucible</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .essence-glow {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        }
+        
+        .crucible-glow {
+            box-shadow: 0 0 40px rgba(139, 69, 19, 0.4), inset 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .essence-item {
+            transform-style: preserve-3d;
+            transition: all 0.3s ease;
+        }
+        
+        .essence-item:hover {
+            transform: translateY(-4px) rotateX(5deg);
+        }
+        
+        .crucible-3d {
+            transform-style: preserve-3d;
+            background: linear-gradient(145deg, #8B4513 0%, #A0522D 50%, #CD853F 100%);
+        }
+        
+        .magic-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, #FFD700, transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 3s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); opacity: 0.8; }
+            50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+        }
+        
+        .color-space-viz {
+            background: linear-gradient(45deg, transparent 49%, #333 49%, #333 51%, transparent 51%);
+            background-size: 20px 20px;
+        }
+
+        .recipe-glow {
+            animation: recipe-pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes recipe-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(93, 92, 222, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(93, 92, 222, 0.6); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 dark:bg-gray-950 text-white min-h-screen">
+    <script>
+        // Dark mode setup
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+    </script>
+
+    <!-- Header -->
+    <header class="bg-gray-800 dark:bg-gray-900 border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-400 to-yellow-400 bg-clip-text text-transparent">
+                    🔮 Spectral Forge: The Alchemist's Crucible
+                </h1>
+                <p class="text-gray-400 text-sm mt-1">Master the art of color space alchemy</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <label class="text-sm text-gray-300">Mixing Space:</label>
+                <select id="colorSpace" class="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-white text-base">
+                    <option value="lch">LCH (Perceptual)</option>
+                    <option value="oklch">OKLCH (Modern)</option>
+                    <option value="hsl">HSL (Traditional)</option>
+                    <option value="hwb">HWB (Artist)</option>
+                    <option value="lab">LAB (Scientific)</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Essence Palette -->
+        <div class="lg:col-span-1">
+            <h2 class="text-xl font-semibold mb-4 text-purple-300">🧪 Color Essences</h2>
+            <div class="grid grid-cols-2 lg:grid-cols-1 gap-3" id="essencePalette">
+                <!-- Essences will be populated by JavaScript -->
+            </div>
+            
+            <div class="mt-6 bg-gray-800 rounded-lg p-4">
+                <h3 class="text-lg font-semibold mb-3 text-yellow-300">📜 Active Recipes</h3>
+                <div id="recipeList" class="space-y-2">
+                    <!-- Recipes will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Crucible Area -->
+        <div class="lg:col-span-2">
+            <div class="relative">
+                <h2 class="text-xl font-semibold mb-4 text-center text-orange-300">⚗️ Alchemical Crucible</h2>
+                
+                <!-- Crucible Container -->
+                <div class="relative bg-gradient-to-b from-gray-700 to-gray-900 rounded-2xl p-8 crucible-glow">
+                    <!-- Magic Particles -->
+                    <div id="magicParticles" class="absolute inset-0 pointer-events-none"></div>
+                    
+                    <!-- Main Crucible -->
+                    <div id="crucible" class="w-48 h-48 mx-auto relative crucible-3d rounded-full border-4 border-yellow-600 flex items-center justify-center overflow-hidden">
+                        <div id="crucibleContent" class="w-40 h-40 rounded-full border-2 border-gray-600 transition-all duration-500 flex items-center justify-center text-xs text-gray-400">
+                            Drop essences here
+                        </div>
+                    </div>
+                    
+                    <!-- Active Essences Display -->
+                    <div id="activeEssences" class="mt-6 flex flex-wrap justify-center gap-2">
+                        <!-- Active essences will appear here -->
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="mt-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-300 mb-1">Mixing Intensity</label>
+                                <input type="range" id="mixingIntensity" min="0" max="100" value="50" 
+                                       class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-300 mb-1">Temperature</label>
+                                <input type="range" id="temperature" min="0" max="100" value="50" 
+                                       class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-300 mb-1">Catalyst Power</label>
+                                <input type="range" id="catalyst" min="0" max="100" value="0" 
+                                       class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-center gap-4">
+                            <button id="mixButton" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-semibold transition-colors">
+                                🌀 Mix Essences
+                            </button>
+                            <button id="clearButton" class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded-lg font-semibold transition-colors">
+                                🧹 Clear Crucible
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="lg:col-span-1">
+            <h2 class="text-xl font-semibold mb-4 text-green-300">📊 Forge Results</h2>
+            
+            <!-- Current Result -->
+            <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                <h3 class="text-lg font-semibold mb-3 text-yellow-300">Current Creation</h3>
+                <div id="resultPreview" class="w-full h-24 rounded-lg border-2 border-gray-600 mb-3 flex items-center justify-center text-gray-400">
+                    No creation yet
+                </div>
+                <div id="resultInfo" class="text-sm space-y-1">
+                    <!-- Color space values will appear here -->
+                </div>
+            </div>
+            
+            <!-- Color Space Comparison -->
+            <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                <h3 class="text-lg font-semibold mb-3 text-blue-300">Color Space Analysis</h3>
+                <div id="colorSpaceComparison" class="space-y-2 text-sm">
+                    <!-- Comparison data will appear here -->
+                </div>
+            </div>
+            
+            <!-- Forge History -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h3 class="text-lg font-semibold mb-3 text-indigo-300">⚔️ Forge History</h3>
+                <div id="forgeHistory" class="space-y-2 max-h-40 overflow-y-auto">
+                    <!-- History items will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Color Space Conversion Library
+        class ColorConverter {
+            static hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            }
+            
+            static rgbToHex(r, g, b) {
+                return "#" + [r, g, b].map(x => {
+                    const hex = Math.round(x).toString(16);
+                    return hex.length === 1 ? "0" + hex : hex;
+                }).join("");
+            }
+            
+            static rgbToHsl(r, g, b) {
+                r /= 255; g /= 255; b /= 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                
+                if (max === min) {
+                    h = s = 0;
+                } else {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                        case g: h = (b - r) / d + 2; break;
+                        case b: h = (r - g) / d + 4; break;
+                    }
+                    h /= 6;
+                }
+                
+                return {
+                    h: Math.round(h * 360),
+                    s: Math.round(s * 100),
+                    l: Math.round(l * 100)
+                };
+            }
+            
+            static hslToRgb(h, s, l) {
+                h /= 360; s /= 100; l /= 100;
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                
+                let r, g, b;
+                if (s === 0) {
+                    r = g = b = l;
+                } else {
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    const p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1/3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1/3);
+                }
+                
+                return {
+                    r: Math.round(r * 255),
+                    g: Math.round(g * 255),
+                    b: Math.round(b * 255)
+                };
+            }
+            
+            static rgbToLab(r, g, b) {
+                // Simplified Lab conversion for demo purposes
+                r /= 255; g /= 255; b /= 255;
+                
+                // Apply gamma correction
+                r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+                g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+                b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+                
+                // Convert to XYZ
+                let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+                let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+                let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+                
+                // Convert to Lab
+                x = x > 0.008856 ? Math.pow(x, 1/3) : (7.787 * x) + 16/116;
+                y = y > 0.008856 ? Math.pow(y, 1/3) : (7.787 * y) + 16/116;
+                z = z > 0.008856 ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
+                
+                return {
+                    l: Math.round((116 * y) - 16),
+                    a: Math.round(500 * (x - y)),
+                    b: Math.round(200 * (y - z))
+                };
+            }
+        }
+
+        // Game State
+        class SpectralForge {
+            constructor() {
+                this.activeEssences = [];
+                this.currentResult = null;
+                this.forgeHistory = [];
+                this.currentColorSpace = 'lch';
+                this.recipes = [
+                    { name: "Crimson Vigor", target: "#dc2626", reward: "Health Potion", difficulty: "Easy" },
+                    { name: "Azure Wisdom", target: "#2563eb", reward: "Mana Essence", difficulty: "Medium" },
+                    { name: "Golden Prosperity", target: "#d97706", reward: "Fortune Charm", difficulty: "Hard" },
+                    { name: "Emerald Growth", target: "#16a34a", reward: "Nature's Blessing", difficulty: "Easy" },
+                    { name: "Violet Mystery", target: "#7c3aed", reward: "Arcane Crystal", difficulty: "Expert" }
+                ];
+                
+                this.essenceTypes = [
+                    { name: "Ruby Essence", color: "#ef4444", rarity: "Common", properties: "Fire Aligned" },
+                    { name: "Sapphire Essence", color: "#3b82f6", rarity: "Common", properties: "Water Aligned" },
+                    { name: "Emerald Essence", color: "#10b981", rarity: "Common", properties: "Earth Aligned" },
+                    { name: "Citrine Essence", color: "#f59e0b", rarity: "Uncommon", properties: "Light Aligned" },
+                    { name: "Amethyst Essence", color: "#8b5cf6", rarity: "Uncommon", properties: "Spirit Aligned" },
+                    { name: "Obsidian Essence", color: "#374151", rarity: "Rare", properties: "Shadow Aligned" },
+                    { name: "Pearl Essence", color: "#f8fafc", rarity: "Rare", properties: "Pure Energy" },
+                    { name: "Prismatic Essence", color: "#ec4899", rarity: "Legendary", properties: "Chaos Magic" }
+                ];
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.generateEssencePalette();
+                this.generateRecipeList();
+                this.setupDragDrop();
+                this.createMagicParticles();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('colorSpace').addEventListener('change', (e) => {
+                    this.currentColorSpace = e.target.value;
+                    this.updateColorSpaceAnalysis();
+                });
+                
+                document.getElementById('mixButton').addEventListener('click', () => this.mixEssences());
+                document.getElementById('clearButton').addEventListener('click', () => this.clearCrucible());
+                
+                // Control sliders
+                ['mixingIntensity', 'temperature', 'catalyst'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', () => this.updateMixingParameters());
+                });
+            }
+            
+            generateEssencePalette() {
+                const palette = document.getElementById('essencePalette');
+                palette.innerHTML = '';
+                
+                this.essenceTypes.forEach((essence, index) => {
+                    const essenceDiv = document.createElement('div');
+                    essenceDiv.className = `essence-item p-3 rounded-lg cursor-grab border-2 border-gray-600 hover:border-gray-400 transition-all essence-glow`;
+                    essenceDiv.style.background = `linear-gradient(135deg, ${essence.color} 0%, ${this.adjustBrightness(essence.color, -20)} 100%)`;
+                    essenceDiv.draggable = true;
+                    essenceDiv.dataset.essence = JSON.stringify(essence);
+                    
+                    essenceDiv.innerHTML = `
+                        <div class="text-xs font-semibold text-white drop-shadow-lg">${essence.name}</div>
+                        <div class="text-xs text-gray-200 mt-1">${essence.rarity}</div>
+                        <div class="text-xs text-gray-300 mt-1">${essence.properties}</div>
+                    `;
+                    
+                    palette.appendChild(essenceDiv);
+                });
+            }
+            
+            generateRecipeList() {
+                const recipeList = document.getElementById('recipeList');
+                recipeList.innerHTML = '';
+                
+                this.recipes.forEach(recipe => {
+                    const recipeDiv = document.createElement('div');
+                    recipeDiv.className = `p-2 rounded border border-gray-600 hover:border-purple-400 cursor-pointer transition-colors text-sm recipe-glow`;
+                    
+                    recipeDiv.innerHTML = `
+                        <div class="font-semibold text-purple-300">${recipe.name}</div>
+                        <div class="text-gray-400">${recipe.reward}</div>
+                        <div class="flex items-center justify-between mt-1">
+                            <span class="text-xs bg-gray-700 px-2 py-1 rounded">${recipe.difficulty}</span>
+                            <div class="w-4 h-4 rounded border border-gray-500" style="background-color: ${recipe.target}"></div>
+                        </div>
+                    `;
+                    
+                    recipeDiv.addEventListener('click', () => this.selectRecipe(recipe));
+                    recipeList.appendChild(recipeDiv);
+                });
+            }
+            
+            setupDragDrop() {
+                const crucible = document.getElementById('crucible');
+                
+                document.addEventListener('dragstart', (e) => {
+                    if (e.target.classList.contains('essence-item')) {
+                        e.dataTransfer.setData('text/plain', e.target.dataset.essence);
+                    }
+                });
+                
+                crucible.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    crucible.classList.add('ring-4', 'ring-purple-400');
+                });
+                
+                crucible.addEventListener('dragleave', () => {
+                    crucible.classList.remove('ring-4', 'ring-purple-400');
+                });
+                
+                crucible.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    crucible.classList.remove('ring-4', 'ring-purple-400');
+                    
+                    const essenceData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    this.addEssenceToCrucible(essenceData);
+                });
+            }
+            
+            addEssenceToCrucible(essence) {
+                if (this.activeEssences.length >= 5) {
+                    this.showToast("Crucible is full! Mix current essences or clear the crucible.", "warning");
+                    return;
+                }
+                
+                this.activeEssences.push(essence);
+                this.updateActiveEssencesDisplay();
+                this.updateCrucibleVisualization();
+                this.showToast(`Added ${essence.name} to crucible`, "success");
+            }
+            
+            updateActiveEssencesDisplay() {
+                const container = document.getElementById('activeEssences');
+                container.innerHTML = '';
+                
+                this.activeEssences.forEach((essence, index) => {
+                    const essenceChip = document.createElement('div');
+                    essenceChip.className = 'flex items-center bg-gray-700 rounded-full px-3 py-1 text-sm';
+                    essenceChip.innerHTML = `
+                        <div class="w-3 h-3 rounded-full mr-2" style="background-color: ${essence.color}"></div>
+                        <span class="text-white">${essence.name.split(' ')[0]}</span>
+                        <button onclick="game.removeEssence(${index})" class="ml-2 text-red-400 hover:text-red-300">×</button>
+                    `;
+                    container.appendChild(essenceChip);
+                });
+            }
+            
+            removeEssence(index) {
+                this.activeEssences.splice(index, 1);
+                this.updateActiveEssencesDisplay();
+                this.updateCrucibleVisualization();
+            }
+            
+            updateCrucibleVisualization() {
+                const content = document.getElementById('crucibleContent');
+                
+                if (this.activeEssences.length === 0) {
+                    content.style.background = '';
+                    content.textContent = 'Drop essences here';
+                    content.className = 'w-40 h-40 rounded-full border-2 border-gray-600 transition-all duration-500 flex items-center justify-center text-xs text-gray-400';
+                    return;
+                }
+                
+                // Create a gradient from all active essences
+                const colors = this.activeEssences.map(e => e.color);
+                const gradient = colors.length === 1 
+                    ? colors[0]
+                    : `linear-gradient(45deg, ${colors.join(', ')})`;
+                
+                content.style.background = gradient;
+                content.textContent = '';
+                content.className = 'w-40 h-40 rounded-full border-2 border-yellow-400 transition-all duration-500 flex items-center justify-center text-xs essence-glow';
+            }
+            
+            mixEssences() {
+                if (this.activeEssences.length < 2) {
+                    this.showToast("Need at least 2 essences to create a mixture!", "warning");
+                    return;
+                }
+                
+                // Perform color mixing based on current color space
+                const mixedColor = this.performColorMixing();
+                this.currentResult = {
+                    color: mixedColor,
+                    essences: [...this.activeEssences],
+                    timestamp: new Date(),
+                    colorSpace: this.currentColorSpace
+                };
+                
+                this.updateResultDisplay();
+                this.addToForgeHistory(this.currentResult);
+                this.checkRecipeMatches();
+                this.showToast("Essence mixing complete! ✨", "success");
+                
+                // Visual effect
+                this.triggerMixingEffect();
+            }
+            
+            performColorMixing() {
+                const colors = this.activeEssences.map(e => e.color);
+                
+                // Convert all colors to RGB first
+                const rgbColors = colors.map(color => ColorConverter.hexToRgb(color));
+                
+                // Simple average mixing for demo - in a real implementation,
+                // this would use proper color space mixing algorithms
+                const avgR = Math.round(rgbColors.reduce((sum, rgb) => sum + rgb.r, 0) / rgbColors.length);
+                const avgG = Math.round(rgbColors.reduce((sum, rgb) => sum + rgb.g, 0) / rgbColors.length);
+                const avgB = Math.round(rgbColors.reduce((sum, rgb) => sum + rgb.b, 0) / rgbColors.length);
+                
+                // Apply mixing parameters
+                const intensity = document.getElementById('mixingIntensity').value / 100;
+                const temperature = document.getElementById('temperature').value / 100;
+                const catalyst = document.getElementById('catalyst').value / 100;
+                
+                // Modify color based on parameters
+                let finalR = Math.round(avgR * (0.5 + intensity * 0.5));
+                let finalG = Math.round(avgG * (0.5 + intensity * 0.5));
+                let finalB = Math.round(avgB * (0.5 + intensity * 0.5));
+                
+                // Temperature effect (warmer = more red/yellow, cooler = more blue)
+                if (temperature > 0.5) {
+                    finalR = Math.min(255, finalR + (temperature - 0.5) * 100);
+                    finalG = Math.min(255, finalG + (temperature - 0.5) * 50);
+                } else {
+                    finalB = Math.min(255, finalB + (0.5 - temperature) * 100);
+                }
+                
+                // Catalyst effect (enhances saturation)
+                if (catalyst > 0) {
+                    const hsl = ColorConverter.rgbToHsl(finalR, finalG, finalB);
+                    hsl.s = Math.min(100, hsl.s + catalyst * 50);
+                    const rgb = ColorConverter.hslToRgb(hsl.h, hsl.s, hsl.l);
+                    finalR = rgb.r;
+                    finalG = rgb.g;
+                    finalB = rgb.b;
+                }
+                
+                return ColorConverter.rgbToHex(finalR, finalG, finalB);
+            }
+            
+            updateResultDisplay() {
+                const preview = document.getElementById('resultPreview');
+                const info = document.getElementById('resultInfo');
+                
+                if (!this.currentResult) {
+                    preview.style.background = '';
+                    preview.textContent = 'No creation yet';
+                    info.innerHTML = '';
+                    return;
+                }
+                
+                preview.style.background = this.currentResult.color;
+                preview.textContent = '';
+                
+                // Display color space values
+                const rgb = ColorConverter.hexToRgb(this.currentResult.color);
+                const hsl = ColorConverter.rgbToHsl(rgb.r, rgb.g, rgb.b);
+                const lab = ColorConverter.rgbToLab(rgb.r, rgb.g, rgb.b);
+                
+                info.innerHTML = `
+                    <div><strong>Hex:</strong> ${this.currentResult.color}</div>
+                    <div><strong>RGB:</strong> ${rgb.r}, ${rgb.g}, ${rgb.b}</div>
+                    <div><strong>HSL:</strong> ${hsl.h}°, ${hsl.s}%, ${hsl.l}%</div>
+                    <div><strong>Lab:</strong> ${lab.l}, ${lab.a}, ${lab.b}</div>
+                    <div class="mt-2 text-xs text-gray-400">Mixed in ${this.currentResult.colorSpace.toUpperCase()} space</div>
+                `;
+                
+                this.updateColorSpaceAnalysis();
+            }
+            
+            updateColorSpaceAnalysis() {
+                const comparison = document.getElementById('colorSpaceComparison');
+                
+                if (!this.currentResult) {
+                    comparison.innerHTML = '<div class="text-gray-400">No active creation to analyze</div>';
+                    return;
+                }
+                
+                const spaces = ['RGB', 'HSL', 'LAB', 'LCH', 'OKLCH'];
+                const currentSpace = this.currentColorSpace.toUpperCase();
+                
+                comparison.innerHTML = `
+                    <div class="font-semibold text-blue-300 mb-2">Color Space Properties:</div>
+                    <div class="text-xs space-y-1">
+                        <div class="flex justify-between">
+                            <span>Current Space:</span>
+                            <span class="text-yellow-300">${currentSpace}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Perceptual Uniformity:</span>
+                            <span>${this.getSpaceRating(currentSpace, 'perceptual')}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Mixing Quality:</span>
+                            <span>${this.getSpaceRating(currentSpace, 'mixing')}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Gamut Coverage:</span>
+                            <span>${this.getSpaceRating(currentSpace, 'gamut')}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            getSpaceRating(space, property) {
+                const ratings = {
+                    'LCH': { perceptual: '⭐⭐⭐⭐⭐', mixing: '⭐⭐⭐⭐', gamut: '⭐⭐⭐⭐' },
+                    'OKLCH': { perceptual: '⭐⭐⭐⭐⭐', mixing: '⭐⭐⭐⭐⭐', gamut: '⭐⭐⭐⭐⭐' },
+                    'HSL': { perceptual: '⭐⭐', mixing: '⭐⭐⭐', gamut: '⭐⭐⭐' },
+                    'HWB': { perceptual: '⭐⭐⭐', mixing: '⭐⭐⭐', gamut: '⭐⭐⭐' },
+                    'LAB': { perceptual: '⭐⭐⭐⭐', mixing: '⭐⭐⭐⭐', gamut: '⭐⭐⭐⭐' }
+                };
+                
+                return ratings[space]?.[property] || '⭐⭐⭐';
+            }
+            
+            checkRecipeMatches() {
+                if (!this.currentResult) return;
+                
+                const targetColor = this.currentResult.color;
+                
+                this.recipes.forEach(recipe => {
+                    const distance = this.calculateColorDistance(targetColor, recipe.target);
+                    if (distance < 50) { // Threshold for "close enough"
+                        this.showToast(`🎉 Recipe Match! You've created ${recipe.name}!`, "success");
+                        this.addToForgeHistory({
+                            ...this.currentResult,
+                            achievement: recipe.name,
+                            reward: recipe.reward
+                        });
+                    }
+                });
+            }
+            
+            calculateColorDistance(color1, color2) {
+                const rgb1 = ColorConverter.hexToRgb(color1);
+                const rgb2 = ColorConverter.hexToRgb(color2);
+                
+                return Math.sqrt(
+                    Math.pow(rgb1.r - rgb2.r, 2) +
+                    Math.pow(rgb1.g - rgb2.g, 2) +
+                    Math.pow(rgb1.b - rgb2.b, 2)
+                );
+            }
+            
+            addToForgeHistory(result) {
+                this.forgeHistory.unshift(result);
+                if (this.forgeHistory.length > 10) {
+                    this.forgeHistory = this.forgeHistory.slice(0, 10);
+                }
+                this.updateForgeHistoryDisplay();
+            }
+            
+            updateForgeHistoryDisplay() {
+                const history = document.getElementById('forgeHistory');
+                history.innerHTML = '';
+                
+                this.forgeHistory.forEach((item, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'flex items-center gap-2 p-2 bg-gray-700 rounded text-xs';
+                    
+                    historyItem.innerHTML = `
+                        <div class="w-4 h-4 rounded border border-gray-500" style="background-color: ${item.color}"></div>
+                        <div class="flex-1">
+                            <div class="text-white">${item.achievement || 'Custom Creation'}</div>
+                            <div class="text-gray-400">${item.essences.length} essences</div>
+                        </div>
+                        ${item.reward ? `<div class="text-yellow-300">🏆</div>` : ''}
+                    `;
+                    
+                    history.appendChild(historyItem);
+                });
+            }
+            
+            clearCrucible() {
+                this.activeEssences = [];
+                this.updateActiveEssencesDisplay();
+                this.updateCrucibleVisualization();
+                this.showToast("Crucible cleared", "info");
+            }
+            
+            selectRecipe(recipe) {
+                this.showToast(`Recipe selected: ${recipe.name}. Try to match the target color!`, "info");
+            }
+            
+            updateMixingParameters() {
+                // Visual feedback for parameter changes
+                const crucible = document.getElementById('crucible');
+                const intensity = document.getElementById('mixingIntensity').value;
+                const temperature = document.getElementById('temperature').value;
+                
+                if (this.activeEssences.length > 0) {
+            crucible.style.filter = `brightness(${0.8 + intensity/500}) hue-rotate(${(temperature-50)*2}deg)`;
+                }
+            }
+            
+            triggerMixingEffect() {
+                const crucible = document.getElementById('crucible');
+                crucible.classList.add('animate-pulse');
+                
+                // Create more magic particles during mixing
+                for (let i = 0; i < 10; i++) {
+                    setTimeout(() => this.createMagicParticle(), i * 100);
+                }
+                
+                setTimeout(() => {
+                    crucible.classList.remove('animate-pulse');
+                }, 2000);
+            }
+            
+            createMagicParticles() {
+                const container = document.getElementById('magicParticles');
+                
+                setInterval(() => {
+                    if (this.activeEssences.length > 0) {
+                        this.createMagicParticle();
+                    }
+                }, 2000);
+            }
+            
+            createMagicParticle() {
+                const container = document.getElementById('magicParticles');
+                const particle = document.createElement('div');
+                particle.className = 'magic-particle';
+                
+                // Random position around the crucible
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 80 + Math.random() * 40;
+                const x = 50 + Math.cos(angle) * radius;
+                const y = 50 + Math.sin(angle) * radius;
+                
+                particle.style.left = x + '%';
+                particle.style.top = y + '%';
+                
+                container.appendChild(particle);
+                
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                }, 3000);
+            }
+            
+            adjustBrightness(hex, percent) {
+                const rgb = ColorConverter.hexToRgb(hex);
+                const factor = 1 + percent / 100;
+                
+                const newR = Math.min(255, Math.max(0, Math.round(rgb.r * factor)));
+                const newG = Math.min(255, Math.max(0, Math.round(rgb.g * factor)));
+                const newB = Math.min(255, Math.max(0, Math.round(rgb.b * factor)));
+                
+                return ColorConverter.rgbToHex(newR, newG, newB);
+            }
+            
+            showToast(message, type = "info") {
+                const toast = document.createElement('div');
+                const colors = {
+                    success: 'bg-green-600',
+                    warning: 'bg-yellow-600',
+                    error: 'bg-red-600',
+                    info: 'bg-blue-600'
+                };
+                
+                toast.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full`;
+                toast.textContent = message;
+                
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.classList.remove('translate-x-full');
+                }, 100);
+                
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+        }
+        
+        // Initialize the game
+        const game = new SpectralForge();
+        
+        // Make game globally accessible for onclick handlers
+        window.game = game;
+    </script>
+</body>
+</html>
